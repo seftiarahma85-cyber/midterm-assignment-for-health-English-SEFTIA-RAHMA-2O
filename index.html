@@ -1,0 +1,282 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"/>
+<title>Snakes and Ladders: Public Health Edition</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0;}
+body{background:#f5f5f7;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;padding:1rem 0.75rem 3rem;}
+#wrap{display:flex;flex-direction:column;align-items:center;gap:12px;max-width:640px;margin:0 auto;width:100%;}
+#header{width:100%;text-align:center;}
+#header h1{font-size:clamp(14px,4vw,18px);font-weight:600;color:#1d1d1f;line-height:1.3;}
+#header .sub{font-size:clamp(10px,3vw,12px);color:#6e6e73;margin-top:3px;}
+#rules-box{width:100%;background:#fff;border-radius:12px;padding:12px 14px;box-shadow:0 1px 4px rgba(0,0,0,.08);}
+#rules-box h2{font-size:clamp(11px,3vw,13px);font-weight:700;color:#1d1d1f;margin-bottom:7px;text-align:center;letter-spacing:.4px;}
+#rules-box ol{list-style:none;display:flex;flex-direction:column;gap:5px;}
+#rules-box ol li{font-size:clamp(11px,3vw,12.5px);color:#444;line-height:1.5;}
+#board-container{position:relative;width:100%;max-width:600px;}
+canvas#bd{border-radius:12px;border:1px solid #e0e0e0;display:block;width:100%;height:auto;box-shadow:0 2px 8px rgba(0,0,0,.1);}
+#board-dim{display:none;position:absolute;inset:0;background:rgba(0,0,0,.38);border-radius:12px;z-index:9;}
+#quiz-overlay{display:none;position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:92%;max-width:460px;background:#fff;border-radius:16px;padding:18px 16px 16px;box-shadow:0 8px 32px rgba(0,0,0,.28);border:0.5px solid #e0e0e0;z-index:10;animation:popIn .2s ease;}
+@keyframes popIn{from{opacity:0;transform:translate(-50%,-50%) scale(.92);}to{opacity:1;transform:translate(-50%,-50%) scale(1);}}
+#q-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:7px;gap:8px;}
+#q-topic{font-size:clamp(9px,2.5vw,11px);font-weight:600;color:#534AB7;letter-spacing:.4px;text-transform:uppercase;}
+#q-dice-badge{font-size:clamp(10px,2.8vw,12px);background:#534AB7;color:#fff;border-radius:6px;padding:2px 9px;font-weight:600;white-space:nowrap;flex-shrink:0;}
+#q-text{font-size:clamp(12px,3.5vw,14px);font-weight:500;color:#1d1d1f;margin-bottom:11px;line-height:1.5;}
+#q-opts{display:grid;grid-template-columns:1fr 1fr;gap:7px;}
+.qb{font-size:clamp(11px,3vw,13px);padding:9px 8px;border-radius:10px;border:1px solid #e0e0e0;background:#f5f5f7;cursor:pointer;text-align:left;color:#1d1d1f;line-height:1.4;-webkit-tap-highlight-color:transparent;touch-action:manipulation;}
+.qb:active{background:#e0e0e8;}
+.qb.correct{background:#EAF3DE;border-color:#3B6D11;color:#27500A;}
+.qb.wrong{background:#FCEBEB;border-color:#A32D2D;color:#791F1F;}
+#q-fb{font-size:clamp(11px,3vw,13px);margin-top:10px;text-align:center;font-weight:500;min-height:20px;color:#555;}
+#legend{display:flex;gap:8px;font-size:clamp(9px,2.5vw,11px);color:#555;align-items:center;flex-wrap:wrap;justify-content:center;}
+.leg{display:flex;align-items:center;gap:3px;}
+.leg-box{width:10px;height:10px;border-radius:2px;flex-shrink:0;}
+#start-panel{width:100%;text-align:center;}
+#start-btn{font-size:clamp(13px,4vw,15px);padding:10px 36px;border-radius:10px;border:none;background:#534AB7;color:#fff;cursor:pointer;font-weight:600;box-shadow:0 2px 8px rgba(83,74,183,.3);-webkit-tap-highlight-color:transparent;touch-action:manipulation;}
+#start-btn:active{background:#3C3489;transform:scale(.97);}
+#top-bar{display:none;flex-direction:row;gap:6px;width:100%;max-width:600px;justify-content:space-between;align-items:center;}
+.scard{background:#fff;border-radius:10px;padding:6px 8px;text-align:center;flex:1;box-shadow:0 1px 4px rgba(0,0,0,.08);}
+.scard .slbl{font-size:clamp(9px,2.5vw,11px);color:#6e6e73;margin-bottom:1px;}
+.scard .sval{font-size:clamp(14px,4vw,18px);font-weight:600;color:#1d1d1f;}
+#msg-area{width:100%;max-width:600px;text-align:center;display:none;min-height:20px;}
+#msg{font-size:clamp(11px,3.5vw,13px);font-weight:500;color:#1d1d1f;padding:0 8px;}
+#dice-row{display:none;align-items:center;gap:12px;justify-content:center;}
+#dice-svg{cursor:pointer;filter:drop-shadow(0 2px 6px rgba(83,74,183,.3));-webkit-tap-highlight-color:transparent;touch-action:manipulation;flex-shrink:0;}
+#roll-btn{font-size:clamp(13px,4vw,14px);padding:9px 22px;border-radius:10px;border:none;background:#534AB7;color:#fff;cursor:pointer;font-weight:600;-webkit-tap-highlight-color:transparent;touch-action:manipulation;}
+#roll-btn:active{background:#3C3489;transform:scale(.97);}
+#roll-btn:disabled{background:#ccc;cursor:default;transform:none;}
+#new-btn{font-size:clamp(11px,3vw,12px);padding:6px 12px;border-radius:8px;border:1px solid #ccc;background:#fff;color:#555;cursor:pointer;-webkit-tap-highlight-color:transparent;touch-action:manipulation;}
+#new-btn:active{background:#f0f0f0;}
+#end-panel{display:none;width:100%;max-width:600px;background:#fff;border-radius:14px;padding:24px 16px;text-align:center;position:relative;overflow:hidden;box-shadow:0 2px 8px rgba(0,0,0,.1);}
+#end-panel h3{font-size:clamp(17px,5vw,22px);font-weight:700;margin-bottom:8px;color:#1d1d1f;}
+#end-panel p{font-size:clamp(11px,3vw,13px);color:#555;margin-bottom:16px;line-height:1.6;}
+#play-again-btn{font-size:clamp(13px,4vw,14px);padding:9px 24px;border-radius:10px;border:none;background:#534AB7;color:#fff;cursor:pointer;font-weight:600;-webkit-tap-highlight-color:transparent;}
+#play-again-btn:active{background:#3C3489;}
+#confetti-canvas{position:absolute;top:0;left:0;width:100%;height:100%;pointer-events:none;}
+#win-badge{font-size:clamp(36px,12vw,52px);margin-bottom:8px;display:block;}
+</style>
+</head>
+<body>
+<div id="wrap">
+  <div id="header">
+    <h1>Snakes and Ladders: Public Health Edition</h1>
+    <div class="sub">SEFTIA RAHMA &nbsp;|&nbsp; NPM: 240114917636</div>
+  </div>
+  <div id="rules-box">
+    <h2>RULES</h2>
+    <ol>
+      <li>🎲 Players must roll the dice first, then answer one public health quiz question in English before moving their pawn on the board.</li>
+      <li>✅ Correct answer = move forward by the dice number. ❌ Wrong answer = stay in place and wait for the next turn.</li>
+      <li>🪜 Land on a ladder = go up. 🐍 Land on a snake = go down. Reach square 60 to win!</li>
+    </ol>
+  </div>
+
+  <div id="board-container">
+    <canvas id="bd" width="600" height="600"></canvas>
+    <div id="board-dim"></div>
+    <div id="quiz-overlay">
+      <div id="q-header">
+        <div id="q-topic"></div>
+        <div id="q-dice-badge"></div>
+      </div>
+      <div id="q-text"></div>
+      <div id="q-opts"></div>
+      <div id="q-fb"></div>
+    </div>
+  </div>
+
+  <div id="legend">
+    <div class="leg"><div class="leg-box" style="background:#C0DD97;"></div>Ladder</div>
+    <div class="leg"><div class="leg-box" style="background:#F7C1C1;"></div>Snake</div>
+    <div class="leg"><div class="leg-box" style="background:#CECBF6;"></div>Epidemiology</div>
+    <div class="leg"><div class="leg-box" style="background:#9FE1CB;"></div>Occ. Health</div>
+    <div class="leg"><div class="leg-box" style="background:#F4C0D1;"></div>Repro. Health</div>
+    <div class="leg"><div class="leg-box" style="background:#B5D4F4;"></div>Env. Health</div>
+    <div class="leg"><div class="leg-box" style="background:#FAC775;"></div>Nutrition</div>
+  </div>
+
+  <div id="start-panel"><button id="start-btn">Start Game</button></div>
+
+  <div id="top-bar">
+    <div class="scard"><div class="slbl">Pos</div><div class="sval" id="s-pos">1</div></div>
+    <div class="scard"><div class="slbl">Score</div><div class="sval" id="s-score">0</div></div>
+    <div class="scard"><div class="slbl">✅</div><div class="sval" id="s-correct">0</div></div>
+    <div class="scard"><div class="slbl">❌</div><div class="sval" id="s-wrong">0</div></div>
+    <button id="new-btn">↩ Restart</button>
+  </div>
+
+  <div id="msg-area"><div id="msg"></div></div>
+
+  <div id="dice-row">
+    <svg id="dice-svg" width="54" height="54" viewBox="0 0 54 54">
+      <rect x="2" y="2" width="50" height="50" rx="10" fill="#534AB7"/>
+      <g id="dots" fill="#fff"></g>
+    </svg>
+    <button id="roll-btn">Roll Dice</button>
+  </div>
+
+  <div id="end-panel">
+    <canvas id="confetti-canvas"></canvas>
+    <span id="win-badge">🎉</span>
+    <h3>Congratulations!</h3>
+    <p id="end-stats"></p>
+    <button id="play-again-btn">Play Again</button>
+  </div>
+</div>
+
+<script>
+const QUIZZES=[
+{t:"Epidemiology",q:"What is epidemiology?",opts:["Study of diseases in populations","Study of animals","Study of drugs","Study of plants"],a:0},
+{t:"Epidemiology",q:"What is incidence?",opts:["Total number of cases","New cases in a population","Old cases only","Death cases"],a:1},
+{t:"Epidemiology",q:"What is prevalence?",opts:["New cases only","Total cases in a population","Death rate","Recovery rate"],a:1},
+{t:"Epidemiology",q:"What causes tuberculosis?",opts:["Virus","Bacteria","Fungus","Parasite"],a:1},
+{t:"Epidemiology",q:"How is dengue transmitted?",opts:["Through air","Through water","Mosquito bite","Through food"],a:2},
+{t:"Epidemiology",q:"What is a pandemic?",opts:["A local disease","Global disease spread","A small infection","A rare disease"],a:1},
+{t:"Epidemiology",q:"What is a vector in disease transmission?",opts:["A medicine","Organism that transmits disease","A symptom","A vaccine"],a:1},
+{t:"Epidemiology",q:"What is the mortality rate?",opts:["Number of deaths per population","Number of births","Number of patients","Number of doctors"],a:0},
+{t:"Epidemiology",q:"What is morbidity?",opts:["Death","Illness or disease state","Recovery","Health"],a:1},
+{t:"Epidemiology",q:"What is herd immunity?",opts:["Individual protection only","Community protection via vaccination","Animal immunity","Protection from disasters"],a:1},
+{t:"Epidemiology",q:"How does COVID-19 primarily spread?",opts:["Through soil","Through water","Via respiratory droplets","Through food"],a:2},
+{t:"Epidemiology",q:"What is a disease outbreak?",opts:["Sudden increase of cases","Decrease of cases","No disease present","Mass recovery"],a:0},
+{t:"Epidemiology",q:"What is surveillance in public health?",opts:["Watching television","Monitoring disease data systematically","Providing treatment","Administering vaccines"],a:1},
+{t:"Epidemiology",q:"What is a risk factor?",opts:["A cure for disease","Something that increases disease risk","A vaccine type","A medicine"],a:1},
+{t:"Epidemiology",q:"What is quarantine?",opts:["A type of treatment","Isolation to prevent disease spread","A vaccination method","A form of exercise"],a:1},
+{t:"Occ. Health",q:"What does PPE stand for?",opts:["Personal Protective Equipment","Public Protection Equipment","Patient Protection Equipment","Private Protective Equipment"],a:0},
+{t:"Occ. Health",q:"Which of these is an example of PPE?",opts:["Face mask","Office table","Plastic chair","Textbook"],a:0},
+{t:"Occ. Health",q:"What is a workplace hazard?",opts:["A safe working condition","A dangerous condition at work","A clean workspace area","A quiet environment"],a:1},
+{t:"Occ. Health",q:"What is a common cause of workplace accidents?",opts:["Following safety rules","Unsafe behavior by workers","Attending safety training","Having work experience"],a:1},
+{t:"Occ. Health",q:"What is ergonomics?",opts:["Study of workplace design for human use","Study of food safety","Study of infectious disease","Study of water quality"],a:0},
+{t:"Occ. Health",q:"Which of these is a physical hazard?",opts:["Excessive noise","A virus","Bacteria","A chemical germ"],a:0},
+{t:"Occ. Health",q:"What is a chemical hazard?",opts:["Bright light","Toxic substances","Loud sound","Clean air"],a:1},
+{t:"Occ. Health",q:"What should workers do before starting work?",opts:["Ignore safety rules","Follow established safety procedures","Take a nap","Eat a large meal"],a:1},
+{t:"Occ. Health",q:"What is occupational fatigue?",opts:["High energy levels","Excessive tiredness from work","Feeling happy","Physical strength"],a:1},
+{t:"Occ. Health",q:"What is the goal of accident prevention?",opts:["Increasing workplace risk","Reducing the risk of accidents","Ignoring workplace hazards","Encouraging unsafe shortcuts"],a:1},
+{t:"Occ. Health",q:"What is a safety sign used for?",opts:["Workplace decoration","Warning about potential hazards","A toy or prop","A general tool"],a:1},
+{t:"Occ. Health",q:"What is a fire hazard?",opts:["A source of water","A risk of fire occurring","Clean air supply","Soil contamination"],a:1},
+{t:"Occ. Health",q:"What should be worn in a laboratory?",opts:["Flip-flops or sandals","Personal Protective Equipment","No protection needed","Open-toed shoes"],a:1},
+{t:"Occ. Health",q:"What is a risk assessment?",opts:["Ignoring potential risks","Systematically identifying hazards","Playing at work","Sleeping on duty"],a:1},
+{t:"Occ. Health",q:"What is the purpose of safety training?",opts:["To learn and apply safety rules","To watch television","To play workplace games","To sleep at work"],a:0},
+{t:"Repro. Health",q:"What is reproductive health?",opts:["Health of the lungs","Health of the reproductive system","Health of the eyes","Health of the skin"],a:1},
+{t:"Repro. Health",q:"What is menstruation?",opts:["A type of pregnancy","Monthly uterine bleeding","A type of infection","A chronic disease"],a:1},
+{t:"Repro. Health",q:"What is the purpose of contraception?",opts:["To prevent unwanted pregnancy","To cause disease","To cure infections","To increase birth rate"],a:0},
+{t:"Repro. Health",q:"Which of these is a contraceptive method?",opts:["Drinking water","Taking vitamins","Using a condom","Eating certain foods"],a:2},
+{t:"Repro. Health",q:"What is HIV?",opts:["A type of bacteria","A virus","A fungal infection","A parasite"],a:1},
+{t:"Repro. Health",q:"What is AIDS?",opts:["The earliest stage of HIV","Advanced stage HIV disease","A mild viral infection","Full recovery from HIV"],a:1},
+{t:"Repro. Health",q:"How is HIV primarily transmitted?",opts:["Through the air","Via handshaking","Through blood or bodily fluid contact","Through drinking water"],a:2},
+{t:"Repro. Health",q:"What is pregnancy?",opts:["A type of disease","Carrying a developing baby in the womb","A type of infection","A physical injury"],a:1},
+{t:"Repro. Health",q:"What is safe sex?",opts:["High-risk sexual behavior","Protected sexual intercourse","Unprotected intercourse","Unsafe sexual practices"],a:1},
+{t:"Repro. Health",q:"What does STD stand for?",opts:["Skin Transmitted Disease","Sexually Transmitted Disease","Severe Toxic Disorder","Systemic Tissue Damage"],a:1},
+{t:"Repro. Health",q:"What is family planning?",opts:["Planning the number and timing of children","Planning daily food intake","Planning school schedules","Planning work shifts"],a:0},
+{t:"Repro. Health",q:"What is puberty?",opts:["A stage of early childhood","Physical and hormonal changes in adolescence","A condition of old age","A type of disease"],a:1},
+{t:"Repro. Health",q:"What is fertility?",opts:["A type of disease","The ability to conceive and reproduce","A type of infection","A physical injury"],a:1},
+{t:"Repro. Health",q:"What is prenatal care?",opts:["Healthcare provided before childbirth","Care provided after death","Care provided after work","Care provided after school"],a:0},
+{t:"Repro. Health",q:"What is breastfeeding?",opts:["Feeding a baby with breast milk","Giving water to a baby","Giving solid food to a baby","Giving fruit juice to a baby"],a:0},
+{t:"Env. Health",q:"What characterizes clean drinking water?",opts:["It is visibly polluted","It is safe to drink without harm","It contains dirt and sediment","It is wastewater"],a:1},
+{t:"Env. Health",q:"What is sanitation?",opts:["A dirty waste system","A system to maintain a clean and hygienic environment","Industrial waste output","A form of pollution"],a:1},
+{t:"Env. Health",q:"What is a major cause of air pollution?",opts:["Planting more trees","Exhaust from vehicles and factories","Clean river water","Fertile soil"],a:1},
+{t:"Env. Health",q:"What is proper waste management?",opts:["Leaving waste unattended","Handling waste safely and responsibly","Burning all waste anywhere","Dumping waste in rivers"],a:1},
+{t:"Env. Health",q:"What is vector control in environmental health?",opts:["Feeding domestic animals","Eliminating disease-carrying organisms like mosquitoes","Drinking more water daily","Planting trees in cities"],a:1},
+{t:"Env. Health",q:"What is a landfill?",opts:["A designated waste disposal site","A source of drinking water","A hospital facility","A school building"],a:0},
+{t:"Env. Health",q:"What is noise pollution?",opts:["Harmful levels of loud sound","Clean fresh air","A peaceful quiet area","Soft ambient sound"],a:0},
+{t:"Env. Health",q:"What is recycling?",opts:["Throwing waste in the ocean","Reusing or reprocessing materials","Burning all waste","Ignoring waste disposal"],a:1},
+{t:"Env. Health",q:"What does contamination mean?",opts:["Clean and safe condition","Being polluted by harmful substances","Being fresh and pure","Being in a healthy state"],a:1},
+{t:"Env. Health",q:"What is a drainage system used for?",opts:["Managing water flow and runoff","Circulating air in buildings","Distributing food supplies","Providing artificial lighting"],a:0},
+{t:"Nutrition",q:"What is a balanced diet?",opts:["A diet of junk food only","A diet with proper proportions of all nutrients","A diet of only sweets","A diet of fast food"],a:1},
+{t:"Nutrition",q:"What is malnutrition?",opts:["Excellent nutritional status","Poor or inadequate nutritional status","A completely healthy condition","A sign of a strong body"],a:1},
+{t:"Nutrition",q:"What is obesity?",opts:["Being severely underweight","Having excess body fat beyond healthy levels","Being at a normal weight","Having a very slim body"],a:1},
+{t:"Nutrition",q:"What is physical exercise?",opts:["Lying down and sleeping","Bodily movement that improves fitness","Eating large amounts of food","Watching television all day"],a:1},
+{t:"Nutrition",q:"What is health promotion?",opts:["Deliberately causing disease","Preventing disease and improving overall health","Ignoring personal health","Treating illness with medicine only"],a:1}
+];
+
+const SNAKES={55:34,50:19,45:24,38:12,30:7,22:4};
+const LADDERS={3:16,8:26,15:35,24:42,33:51,43:57};
+const COLS=6,ROWS=10;
+const C=document.getElementById('bd');
+const ctx=C.getContext('2d');
+const TOPIC_BG={'Epidemiology':'#EEEDFE','Occ. Health':'#E1F5EE','Repro. Health':'#FBEAF0','Env. Health':'#E6F1FB','Nutrition':'#FAEEDA'};
+const DOT_POS={1:[[27,27]],2:[[14,14],[40,40]],3:[[14,14],[27,27],[40,40]],4:[[14,14],[40,14],[14,40],[40,40]],5:[[14,14],[40,14],[27,27],[14,40],[40,40]],6:[[14,14],[40,14],[14,27],[40,27],[14,40],[40,40]]};
+
+function resizeCanvas(){const w=document.getElementById('board-container').clientWidth;const sz=Math.min(w,600);C.width=sz;C.height=sz;drawBoard();}
+window.addEventListener('resize',resizeCanvas);
+
+let audioCtx=null;
+function getAudio(){if(!audioCtx)audioCtx=new(window.AudioContext||window.webkitAudioContext)();return audioCtx;}
+function playTone(freq,dur,type,vol,delay){type=type||'sine';vol=vol||0.3;delay=delay||0;try{const ac=getAudio();const o=ac.createOscillator();const g=ac.createGain();o.connect(g);g.connect(ac.destination);o.type=type;o.frequency.setValueAtTime(freq,ac.currentTime+delay);g.gain.setValueAtTime(vol,ac.currentTime+delay);g.gain.exponentialRampToValueAtTime(0.001,ac.currentTime+delay+dur);o.start(ac.currentTime+delay);o.stop(ac.currentTime+delay+dur+0.05);}catch(e){}}
+function playDiceShake(){try{const ac=getAudio();for(let i=0;i<8;i++){const o=ac.createOscillator();const g=ac.createGain();o.connect(g);g.connect(ac.destination);o.type='square';o.frequency.setValueAtTime(80+Math.random()*120,ac.currentTime+i*0.07);g.gain.setValueAtTime(0.08,ac.currentTime+i*0.07);g.gain.exponentialRampToValueAtTime(0.001,ac.currentTime+i*0.07+0.06);o.start(ac.currentTime+i*0.07);o.stop(ac.currentTime+i*0.07+0.07);}}catch(e){}}
+function playCorrect(){playTone(523,.12,'sine',.25);playTone(659,.12,'sine',.25,.12);playTone(784,.2,'sine',.25,.24);}
+function playWrong(){playTone(200,.15,'sawtooth',.2);playTone(160,.25,'sawtooth',.2,.15);}
+function playLadder(){[523,587,659,698,784,880].forEach((f,i)=>playTone(f,.1,'sine',.2,i*.08));}
+function playSnake(){[440,415,392,370,349,330].forEach((f,i)=>playTone(f,.1,'sawtooth',.15,i*.08));}
+function playVictory(){const m=[[523,.15],[659,.15],[784,.15],[1047,.3],[880,.1],[784,.1],[880,.1],[1047,.4],[784,.15],[659,.15],[784,.3],[523,.4]];let t=0;m.forEach(([f,d])=>{playTone(f,d,'sine',.3,t);t+=d+.02;});setTimeout(()=>{const m2=[[659,.12],[784,.12],[1047,.12],[1319,.35],[1175,.12],[1047,.12],[1175,.12],[1319,.5]];let t2=0;m2.forEach(([f,d])=>{playTone(f,d,'sine',.25,t2);t2+=d+.02;});},2000);}
+
+function drawDice(v){const g=document.getElementById('dots');g.innerHTML='';(DOT_POS[v]||[]).forEach(([cx,cy])=>{const c=document.createElementNS('http://www.w3.org/2000/svg','circle');c.setAttribute('cx',cx);c.setAttribute('cy',cy);c.setAttribute('r',5);g.appendChild(c);});}
+
+function cellPos(n){const SZ=C.width,CW=SZ/COLS,CH=SZ/ROWS;const row=Math.floor((n-1)/COLS);const col=(row%2===0)?(n-1)%COLS:COLS-1-((n-1)%COLS);return{x:col*CW,y:(ROWS-1-row)*CH,CW,CH};}
+function cellTopic(n){if(n<=15)return'Epidemiology';if(n<=30)return'Occ. Health';if(n<=45)return'Repro. Health';if(n<=55)return'Env. Health';return'Nutrition';}
+
+function drawBoard(){
+  const SZ=C.width,CW=SZ/COLS,CH=SZ/ROWS;
+  ctx.clearRect(0,0,SZ,SZ);
+  for(let i=1;i<=60;i++){
+    const{x,y}=cellPos(i);
+    let bg=TOPIC_BG[cellTopic(i)];
+    if(SNAKES[i])bg='#F7C1C1';if(LADDERS[i])bg='#C0DD97';if(i===1)bg='#B5D4F4';if(i===60)bg='#FFD700';
+    ctx.fillStyle=bg;ctx.beginPath();if(ctx.roundRect)ctx.roundRect(x+1,y+1,CW-2,CH-2,3);else ctx.rect(x+1,y+1,CW-2,CH-2);ctx.fill();
+    if(i===1){ctx.fillStyle='#0C447C';ctx.font=`bold ${CW*.16}px sans-serif`;ctx.textAlign='center';ctx.textBaseline='top';ctx.fillText('1',x+CW/2,y+2);ctx.font=`bold ${CW*.17}px sans-serif`;ctx.textBaseline='middle';ctx.fillText('START',x+CW/2,y+CH*.65);}
+    else if(i===60){ctx.fillStyle='#633806';ctx.font=`bold ${CW*.16}px sans-serif`;ctx.textAlign='center';ctx.textBaseline='top';ctx.fillText('60',x+CW/2,y+2);ctx.font=`bold ${CW*.15}px sans-serif`;ctx.textBaseline='middle';ctx.fillText('FINISH',x+CW/2,y+CH*.65);}
+    else{ctx.fillStyle=SNAKES[i]?'#A32D2D':LADDERS[i]?'#3B6D11':'#555';ctx.font=`bold ${CW*.16}px sans-serif`;ctx.textAlign='center';ctx.textBaseline='top';ctx.fillText(i,x+CW/2,y+2);if(SNAKES[i]){ctx.font=`${CW*.28}px sans-serif`;ctx.textBaseline='middle';ctx.fillText('🐍',x+CW/2,y+CH*.65);}else if(LADDERS[i]){ctx.font=`${CW*.28}px sans-serif`;ctx.textBaseline='middle';ctx.fillText('🪜',x+CW/2,y+CH*.65);}}
+  }
+  drawLines();drawPlayer();
+}
+
+function drawLines(){
+  const SZ=C.width,CW=SZ/COLS,CH=SZ/ROWS;
+  Object.entries(SNAKES).forEach(([f,t])=>{const fp=cellPos(+f),tp=cellPos(+t);ctx.strokeStyle='#E24B4A';ctx.lineWidth=Math.max(1,SZ*.003);ctx.setLineDash([4,3]);ctx.beginPath();ctx.moveTo(fp.x+CW/2,fp.y+CH/2);ctx.lineTo(tp.x+CW/2,tp.y+CH/2);ctx.stroke();ctx.setLineDash([]);});
+  Object.entries(LADDERS).forEach(([f,t])=>{const fp=cellPos(+f),tp=cellPos(+t);ctx.strokeStyle='#3B6D11';ctx.lineWidth=Math.max(1,SZ*.003);ctx.setLineDash([5,3]);ctx.beginPath();ctx.moveTo(fp.x+CW/2,fp.y+CH/2);ctx.lineTo(tp.x+CW/2,tp.y+CH/2);ctx.stroke();ctx.setLineDash([]);});
+}
+
+let pulseAnim=null;
+let G={pos:1,score:0,correct:0,wrong:0,started:false,rolling:false};
+
+function drawPlayer(){if(!G.started)return;const SZ=C.width,CW=SZ/COLS,CH=SZ/ROWS;const{x,y}=cellPos(G.pos);ctx.beginPath();ctx.arc(x+CW/2,y+CH/2,CW*.2,0,Math.PI*2);ctx.fillStyle='#534AB7';ctx.fill();ctx.strokeStyle='#fff';ctx.lineWidth=Math.max(1.5,SZ*.004);ctx.stroke();ctx.fillStyle='#fff';ctx.font=`bold ${CW*.14}px sans-serif`;ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText('YOU',x+CW/2,y+CH/2);}
+
+function drawPulsingPlayer(){let scale=1,dir=1;function pulse(){drawBoard();const SZ=C.width,CW=SZ/COLS,CH=SZ/ROWS;const{x,y}=cellPos(60);const r=CW*.2*scale;ctx.beginPath();ctx.arc(x+CW/2,y+CH/2,r,0,Math.PI*2);ctx.fillStyle='#534AB7';ctx.fill();ctx.strokeStyle='#FFD700';ctx.lineWidth=3;ctx.stroke();ctx.fillStyle='#fff';ctx.font=`bold ${CW*.14}px sans-serif`;ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText('YOU',x+CW/2,y+CH/2);scale+=dir*.03;if(scale>1.3||scale<.9)dir*=-1;pulseAnim=requestAnimationFrame(pulse);}pulse();}
+
+function updateTopBar(){document.getElementById('s-pos').textContent=G.pos;document.getElementById('s-score').textContent=G.score;document.getElementById('s-correct').textContent=G.correct;document.getElementById('s-wrong').textContent=G.wrong;}
+function setRollBtn(e){const b=document.getElementById('roll-btn');b.disabled=!e;b.textContent=e?'Roll Dice':'Rolling...';}
+function showQuizOverlay(show){document.getElementById('quiz-overlay').style.display=show?'block':'none';document.getElementById('board-dim').style.display=show?'block':'none';}
+function calcNewPos(from,steps){const t=from+steps;return t>60?60-(t-60):t;}
+
+async function rollDice(){if(G.rolling)return;G.rolling=true;setRollBtn(false);document.getElementById('msg').textContent='';playDiceShake();let ticks=12,val;await new Promise(r=>{const iv=setInterval(()=>{val=Math.ceil(Math.random()*6);drawDice(val);ticks--;if(ticks<=0){clearInterval(iv);r();}},55);});G.lastRoll=val;document.getElementById('msg').textContent='You rolled a '+val+'! Answer to move forward.';G.rolling=false;showQuiz(val);}
+
+function showQuiz(diceVal){const idx=G.pos-1;const q=QUIZZES[idx]||QUIZZES[Math.floor(Math.random()*QUIZZES.length)];document.getElementById('q-topic').textContent='Topic: '+q.t;document.getElementById('q-dice-badge').textContent='🎲 +'+diceVal+' if correct';document.getElementById('q-text').textContent=q.q;document.getElementById('q-fb').textContent='';const optsEl=document.getElementById('q-opts');optsEl.innerHTML='';q.opts.forEach((o,i)=>{const btn=document.createElement('button');btn.className='qb';btn.textContent=o;btn.onclick=()=>answer(i,q.a,diceVal);optsEl.appendChild(btn);});showQuizOverlay(true);}
+
+function answer(chosen,correct,diceVal){const btns=document.querySelectorAll('.qb');btns.forEach(b=>b.onclick=null);const ok=chosen===correct;btns[chosen].className='qb '+(ok?'correct':'wrong');if(ok){playCorrect();document.getElementById('q-fb').textContent='✅ Correct! +10 pts — Moving +'+diceVal+' squares';G.score+=10;G.correct++;}else{playWrong();document.getElementById('q-fb').textContent='❌ Wrong! Staying at square '+G.pos;G.score=Math.max(0,G.score-5);G.wrong++;}updateTopBar();setTimeout(()=>{showQuizOverlay(false);resolveAnswer(ok,diceVal);},1400);}
+
+function resolveAnswer(ok,diceVal){if(!ok){document.getElementById('msg').textContent='You stayed at square '+G.pos+'. Roll again!';drawBoard();setRollBtn(true);return;}const newPos=calcNewPos(G.pos,diceVal);const bounced=(G.pos+diceVal)>60;if(bounced){animateMove(G.pos,60,()=>{G.pos=60;drawBoard();setTimeout(()=>{document.getElementById('msg').textContent='Overshot! Bouncing back to square '+newPos+'.';animateMove(60,newPos,()=>{G.pos=newPos;updateTopBar();drawBoard();afterLand(false);});},300);});}else if(newPos===60){animateMove(G.pos,60,()=>{G.pos=60;drawBoard();endGame();});}else{animateMove(G.pos,newPos,()=>{G.pos=newPos;updateTopBar();afterLand(true);});}}
+
+function animateMove(from,to,cb){const steps=[];let cur=from;const dir=to>from?1:-1;while(cur!==to){cur+=dir;steps.push(cur);}if(!steps.length){cb();return;}let i=0;function step(){if(i>=steps.length){cb();return;}G.pos=steps[i];drawBoard();i++;setTimeout(step,110);}step();}
+
+function afterLand(canWin){if(canWin&&G.pos>=60){endGame();return;}if(LADDERS[G.pos]){const dest=LADDERS[G.pos];document.getElementById('msg').textContent='🪜 Ladder! Going up to square '+dest+'!';playLadder();setTimeout(()=>{animateMove(G.pos,dest,()=>{G.pos=dest;updateTopBar();drawBoard();document.getElementById('msg').textContent='Landed on '+G.pos+'. Roll again!';if(G.pos>=60){endGame();}else{setRollBtn(true);}});},600);}else if(SNAKES[G.pos]){const dest=SNAKES[G.pos];document.getElementById('msg').textContent='🐍 A snake! Going down to square '+dest+'!';playSnake();setTimeout(()=>{animateMove(G.pos,dest,()=>{G.pos=dest;updateTopBar();drawBoard();document.getElementById('msg').textContent='Slid down to '+G.pos+'. Roll again!';setRollBtn(true);});},600);}else{document.getElementById('msg').textContent='Moved to square '+G.pos+'. Roll again!';setRollBtn(true);}}
+
+let confettiRaf=null;
+function launchConfetti(){const ep=document.getElementById('end-panel');const cc=document.getElementById('confetti-canvas');cc.width=ep.offsetWidth||360;cc.height=ep.offsetHeight||200;const cctx=cc.getContext('2d');const colors=['#534AB7','#D4537E','#1D9E75','#EF9F27','#E24B4A','#378ADD','#5DCAA5','#FFD700'];const parts=Array.from({length:80},()=>({x:Math.random()*cc.width,y:Math.random()*cc.height-cc.height,r:Math.random()*6+3,c:colors[Math.floor(Math.random()*colors.length)],vx:(Math.random()-.5)*3,vy:Math.random()*3+2,rot:Math.random()*360,vr:(Math.random()-.5)*5}));function draw(){cctx.clearRect(0,0,cc.width,cc.height);parts.forEach(p=>{cctx.save();cctx.translate(p.x,p.y);cctx.rotate(p.rot*Math.PI/180);cctx.fillStyle=p.c;cctx.fillRect(-p.r,-p.r/2,p.r*2,p.r);cctx.restore();p.x+=p.vx;p.y+=p.vy;p.rot+=p.vr;if(p.y>cc.height){p.y=-10;p.x=Math.random()*cc.width;}});confettiRaf=requestAnimationFrame(draw);}draw();}
+function stopConfetti(){if(confettiRaf){cancelAnimationFrame(confettiRaf);confettiRaf=null;}}
+
+function endGame(){showQuizOverlay(false);document.getElementById('dice-row').style.display='none';document.getElementById('msg-area').style.display='none';document.getElementById('top-bar').style.display='none';G.pos=60;drawBoard();if(pulseAnim)cancelAnimationFrame(pulseAnim);drawPulsingPlayer();const ep=document.getElementById('end-panel');ep.style.display='block';const pct=G.correct+G.wrong>0?Math.round((G.correct/(G.correct+G.wrong))*100):0;document.getElementById('end-stats').textContent='Score: '+G.score+' pts | ✅ '+G.correct+' | ❌ '+G.wrong+' | Accuracy: '+pct+'%';setTimeout(launchConfetti,100);playVictory();}
+
+function startGame(){stopConfetti();if(pulseAnim){cancelAnimationFrame(pulseAnim);pulseAnim=null;}showQuizOverlay(false);G={pos:1,score:0,correct:0,wrong:0,started:true,rolling:false};document.getElementById('start-panel').style.display='none';document.getElementById('end-panel').style.display='none';document.getElementById('top-bar').style.display='flex';document.getElementById('msg-area').style.display='block';document.getElementById('dice-row').style.display='flex';document.getElementById('msg').textContent='Roll the dice to begin!';drawDice(1);setRollBtn(true);updateTopBar();drawBoard();}
+
+function resetToMenu(){stopConfetti();if(pulseAnim){cancelAnimationFrame(pulseAnim);pulseAnim=null;}showQuizOverlay(false);G={pos:1,score:0,correct:0,wrong:0,started:false,rolling:false};document.getElementById('end-panel').style.display='none';document.getElementById('start-panel').style.display='block';document.getElementById('top-bar').style.display='none';document.getElementById('msg-area').style.display='none';document.getElementById('dice-row').style.display='none';drawDice(1);drawBoard();}
+
+document.getElementById('start-btn').addEventListener('click',startGame);
+document.getElementById('roll-btn').addEventListener('click',rollDice);
+document.getElementById('dice-svg').addEventListener('click',()=>{if(!document.getElementById('roll-btn').disabled)rollDice();});
+document.getElementById('new-btn').addEventListener('click',resetToMenu);
+document.getElementById('play-again-btn').addEventListener('click',startGame);
+resizeCanvas();drawDice(1);
+</script>
+</body>
+</html>
